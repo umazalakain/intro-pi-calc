@@ -1,0 +1,357 @@
+\documentclass[dvipsnames]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsbsy}
+\usepackage{mathbbol}
+\usepackage{mathtools}
+
+% For a wider page
+\usepackage{changepage}
+
+% Diagrams
+\usepackage{tikz}
+
+% Mathbb doesn't support digits
+\usepackage{bbm}
+
+% Example code
+\usepackage{listings}
+
+% Inference rules
+\usepackage{mathpartir}
+
+% Multiple columns
+\usepackage{multicol}
+
+% Newline inside table
+\usepackage{makecell}
+
+% Square bullet points
+\newcommand{\sitem}{\item[\raisebox{.45ex}{\rule{.6ex}{.6ex}}]}
+
+% Abbreviations
+\newcommand{\lambdacalc}{$\lambda$-calculus}
+\newcommand{\picalc}{$\pi$-calculus}
+\newcommand{\Picalc}{$\pi$-Calculus}
+
+% Typing rules
+\newcommand{\stacked}[1]{\mprset{flushleft} \inferrule*{}{#1}}
+\newcommand{\datatype}[2]{{\mprset{fraction={===}} \inferrule{#1}{#2}}}
+\newcommand{\rulename}[1]{{\tiny \textsc{(#1)}}}
+
+% Constructors
+\newcommand{\PO}{\boldsymbol{0}}
+\newcommand{\comp}[2]{#1 \parallel #2}
+\newcommand{\new}[1]{(\boldsymbol{\nu} #1) \,}
+\newcommand{\send}[2]{#1 !\langle #2 \rangle .}
+\newcommand{\recv}[2]{#1 ?( #2 ) .}
+\newcommand{\branch}[3]{#1 \triangleright \left\{l_{#2} : #3_{#2}\right\}_{#2 \in \uppercase{#2}}}
+\newcommand{\select}[2]{#1 \triangleleft l_{#2} .}
+\newcommand{\type}[1]{\mathtt{#1}}
+\newcommand{\tend}[0]{\type{end}}
+\newcommand{\trecv}[1]{\type{?} #1 \type{.}}
+\newcommand{\tsend}[1]{\type{!} #1 \type{.}}
+\newcommand{\tbranch}[2]{\type{\&} \left\{l_{#1} : #2\right\}_{#1 \in \uppercase{#1}}}
+\newcommand{\tselect}[2]{\type{\oplus} \left\{l_{#1} : #2\right\}_{#1 \in \uppercase{#1}}}
+\newcommand{\tchannel}[0]{\type{\#}}
+\newcommand{\dual}[1]{\overline{#1}}
+\newcommand{\is}[0]{\triangleq}
+\newcommand{\types}[0]{\vdash}
+\newcommand{\csplit}[0]{\otimes}
+
+\newcommand{\reducesto}{\Longrightarrow}
+\newcommand{\subst}[3]{{#1 \left[ #2 \rightarrow #3 \right]}}
+
+\newcommand{\slidetitle}[2]{#2 \hspace*{\fill} [#1]}
+
+\usetheme[sectionpage=none,numbering=none]{metropolis}
+\setbeamertemplate{title separator}{}
+\date{}
+
+
+\title{Introduction to the\\ Session Typed \Picalc{}}
+\author{\textbf{Uma Zalakain}\\ University of Glasgow}
+
+\begin{document}
+  \maketitle
+
+  \begin{frame}
+    \begin{itemize}
+      \setlength\itemsep{1em}
+      \sitem untyped \picalc{}
+        \begin{itemize}
+          \sitem motivation
+          \sitem syntax
+          \sitem operational semantics
+        \end{itemize}
+      \sitem session typed \picalc{}
+        \begin{itemize}
+          \sitem motivation
+          \sitem types
+          \sitem type system
+          \sitem properties
+        \end{itemize}
+    \end{itemize}
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Motivation}}
+    \begin{itemize}
+      \setlength\itemsep{1em}
+      \sitem process algebra for concurrent and communicating processes
+      \sitem processes communicate over channels
+      \sitem channels can be sent over channels (\emph{channel mobility})
+      \sitem process reduction drives communication
+    \end{itemize}
+  \end{frame}
+  
+  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Syntax}}
+    \begin{equation*}
+      \begin{aligned}
+        P, Q ::=& \; \PO       &&\text{(termination)}    \\ 
+        |& \; \new{x}P         &&\text{(scope restriction)} \\ 
+        |& \; \comp{P}{Q}      &&\text{(parallel composition)} \\ 
+        |& \; \recv{x}{v}P     &&\text{(input)}       \\ 
+        |& \; \send{x}{v}P     &&\text{(output)}       \\           
+        |& \; \branch{x}{i}{P} &&\text{(branch)}       \\ 
+        |& \; \select{x}{j}P   &&\text{(select)}       \\           
+        \\
+        v ::=& \; x && \text{(channels)}\\
+        | & \; b && \text{(base values)}\\
+      \end{aligned}
+    \end{equation*}
+  \end{frame}
+
+  \begin{frame}
+    EXAMPLE
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Reduction Relation}}
+    \begin{mathpar}
+      \inferrule
+      { }
+      {\comp{\send{x}{y}P}{\recv{x}{z}Q} \reducesto \comp{P}{\subst{Q}{z}{y}}}
+      {\rulename{Comm}}\\
+
+      \inferrule
+      {i \in J}
+      {\comp{\select{x}{i}P}{\branch{x}{j}{Q}} \reducesto \comp{P}{Q_i}}
+      {\rulename{Case}}\\
+
+      \inferrule
+      {P \reducesto P'}
+      {\comp{P}{Q} \reducesto \comp{P'}{Q}}
+      {\rulename{Par}}
+
+      \inferrule
+      {P \reducesto P'}
+      {\new{x} P \reducesto \new{x} P'}
+      {\rulename{Res}}
+
+      \inferrule
+      {P \equiv{} P' \\ P' \reducesto P''}
+      {P \reducesto P''}
+      {\rulename{StructCong}}
+    \end{mathpar}
+  \end{frame}
+
+  \note[itemize]{
+    \sitem Same scope before and after reduction
+    \sitem Common channel $i$
+    \sitem Goes under parallel composition and scope restriction
+  }
+
+
+  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Structural Congruence}}
+    \begin{center}
+      congruent equivalence closure of
+    \end{center}
+
+    \begin{mathpar}
+      \inferrule
+      { }
+      {\comp{P}{(\comp{Q}{R})} \equiv \comp{(\comp{P}{Q})}{R}}
+      {\rulename{CompAssoc}}
+
+      \inferrule
+      { }
+      {\comp{P}{Q} \equiv \comp{Q}{P}}
+      {\rulename{CompComm}}
+      
+      \inferrule
+      { }
+      {\comp{P}{\PO} \equiv P}
+      {\rulename{CompEnd}}
+      
+      \inferrule
+      { }
+      {\new{x} \PO \equiv \PO}
+      {\rulename{ScopeEnd}}
+      
+      \inferrule
+      {x \not\in FV(Q)}
+      {\new{x} (\comp{P}{Q}) \equiv \comp{\new{x} P}{Q}}
+      {\rulename{ScopeExt}}
+
+      \inferrule
+      { }
+      {\new{x} \new{y} P \equiv \new{y} \new{x} P}
+      {\rulename{ScopeComm}}
+    \end{mathpar}
+  \end{frame}
+  \note[itemize]{
+    \sitem Parallel composition is associative, commutative and has $\PO$ as neutral element
+    \sitem Garbage collection
+    \sitem Scope extrusion (keep a proof $uQ$ alongside)
+    \sitem Commutativity of scopes
+  }
+
+  \begin{frame}
+  EXAMPLE
+  \end{frame}
+  
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Motivation}}
+    \begin{itemize}
+      \setlength\itemsep{1em}
+      \sitem data types to structure data;\\
+             session types to structure communication
+      \sitem processes use channels according to their types
+    \end{itemize}
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Characteristics}}
+    \begin{description}
+      \setlength\itemsep{1em}
+      \item[endpoints] each channel has two endpoints
+      \item[linearity] channel endpoints are uniquely owned
+      \item[duality] relation between types of opposite endpoints
+      \item[structure] session types follow the structure of communication
+      \item[change] session types evolve as communication occurs
+    \end{description}
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Example}}
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Properties}}
+    \begin{block}{communication safety}
+      the exchanged data is of the expected type
+    \end{block}
+    \begin{block}{session fidelity}
+      communication is structured as per the session type
+    \end{block}
+    \begin{block}{privacy}
+      session channels only owned by the two communicating parties
+    \end{block}
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Types}}
+    \begin{equation*}
+      \begin{aligned}
+        S ::=& \; \tend      &&\text{(termination)}    \\ 
+        |& \; \trecv{T}S     &&\text{(input)}       \\ 
+        |& \; \tsend{T}S     &&\text{(output)}       \\           
+        |& \; \tbranch{i}{S_i} &&\text{(branch)}       \\ 
+        |& \; \tselect{i}{S_i} &&\text{(select)}       \\           
+        \\
+        T ::=& \; S      &&\text{(session type)} \\
+        | & \; \tchannel T && \text{(standard channel type)} \\
+        | & \; \ldots      &&\text{(base data types)} \\
+      \end{aligned}
+    \end{equation*}
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Terms}}
+    \begin{equation*}
+      \begin{aligned}
+        P, Q ::=& \; \PO       &&\text{(termination)}    \\ 
+        |& \; \new{x}P         &&\text{(scope restriction)} \\ 
+        |& \; \comp{P}{Q}      &&\text{(parallel composition)} \\ 
+        |& \; \recv{e}{v}P     &&\text{(input)}       \\ 
+        |& \; \send{e}{v}P     &&\text{(output)}       \\           
+        |& \; \branch{e}{i}{P} &&\text{(branch)}       \\ 
+        |& \; \select{e}{j}P   &&\text{(select)}       \\           
+        v ::=& \; e && \text{(channel endpoint)}\\
+        |& \; b && \text{(base values)}\\
+        e ::=& \; x \; | \; x^+ \; | \; x^- && \text{(channel endpoint)}\\
+      \end{aligned}
+    \end{equation*}
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Duality}}
+    \begin{equation*}
+      \begin{aligned}
+        &\dual{\tend}          &&\is \tend\\
+        &\dual{\trecv{T}S}     &&\is \tsend{T}\dual{S}\\
+        &\dual{\tsend{T}S}     &&\is \trecv{T}\dual{S}\\
+        &\dual{\tbranch{i}{S_i}} &&\is \tselect{i}{\dual{S_i}}\\
+        &\dual{\tselect{i}{S_i}} &&\is \tbranch{i}{\dual{S_i}}\\
+        &\dual{\tchannel{T}}   &&\is \tchannel{T}\\
+        \\
+        &\dual{x}   &&\is x\\
+        &\dual{x^+} &&\is x^-\\
+        &\dual{x^-} &&\is x^+\\
+      \end{aligned}
+    \end{equation*}
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Typing Judgments}}
+    \begin{mathpar}
+      \datatype
+      { }
+      {\Gamma \ni e : S}
+      {\rulename{VarRef}}
+
+      \datatype
+      { }
+      {\Gamma \types P}
+      {\rulename{Types}}
+    \end{mathpar}
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Typing Rules}}
+    \begin{mathpar}
+      \small
+      
+      \inferrule
+      { }
+      {e : S \ni e : S}
+      {\rulename{Var}}
+
+      \inferrule
+      {\Gamma = \Gamma_{un} \csplit \Gamma_e \\ un(\Gamma_{un}) \\ \Gamma_e \ni e : \tend}
+      {\Gamma \types \PO}
+      {\rulename{End}}
+
+      \inferrule
+      {\Gamma = \Gamma_P \csplit \Gamma_Q \\ \Gamma_P \types P \\ \Gamma_Q \types Q}
+      {\Gamma \types \comp{P}{Q}}
+      {\rulename{Par}}
+
+      \inferrule
+      {\Gamma , S : e , \dual{S} : \dual{e} \types P}
+      {\Gamma \types \new{x} P}
+      {\rulename{Res}}
+
+      \inferrule
+      {\Gamma = \Gamma_e \csplit \Gamma_P \\ \Gamma_e \ni e : \trecv{T}S \\ \Gamma_P , e : S , v : T \types P}
+      {\Gamma \types \recv{e}{v} P}
+      {\rulename{In}}
+
+      \inferrule
+      {\Gamma = \Gamma_e \csplit \Gamma_v \csplit \Gamma_P \\
+        \stacked{
+          \Gamma_e \ni e : \trecv{T}S \\\\
+          \Gamma_v \ni v : S} \\
+        \Gamma_P \types P}
+      {\Gamma \types \send{e}{v} P}
+      {\rulename{Out}}
+    \end{mathpar}
+  \end{frame}
+
+  \begin{frame}{Acknowledgements}
+    Ornela Dardha
+  \end{frame}
+\end{document}
