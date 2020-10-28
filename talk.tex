@@ -43,19 +43,19 @@
 \newcommand{\rulename}[1]{{\tiny \textsc{(#1)}}}
 
 % Constructors
-\newcommand{\PO}{\boldsymbol{0}}
+\newcommand{\PO}{\textbf{0}}
 \newcommand{\comp}[2]{#1 \parallel #2}
 \newcommand{\new}[1]{(\boldsymbol{\nu} #1) \,}
-\newcommand{\send}[2]{#1 !\langle #2 \rangle .}
-\newcommand{\recv}[2]{#1 ?( #2 ) .}
-\newcommand{\branch}[3]{#1 \triangleright \left\{l_{#2} : #3_{#2}\right\}_{#2 \in \uppercase{#2}}}
-\newcommand{\select}[2]{#1 \triangleleft l_{#2} .}
+\newcommand{\send}[2]{#1 !\langle #2 \rangle \, . \,}
+\newcommand{\recv}[2]{#1 ?( #2 ) \, . \,}
+\newcommand{\branch}[3]{#1 \triangleright \{ #2 \}_{#3}}
+\newcommand{\select}[2]{#1 \triangleleft #2 \, . \,}
 \newcommand{\type}[1]{\mathtt{#1}}
 \newcommand{\tend}[0]{\type{end}}
 \newcommand{\trecv}[1]{\type{?} #1 \type{.}}
 \newcommand{\tsend}[1]{\type{!} #1 \type{.}}
-\newcommand{\tbranch}[2]{\type{\&} \left\{l_{#1} : #2\right\}_{#1 \in \uppercase{#1}}}
-\newcommand{\tselect}[2]{\type{\oplus} \left\{l_{#1} : #2\right\}_{#1 \in \uppercase{#1}}}
+\newcommand{\tbranch}[2]{\type{\&} \{ #1 \}_{#2}}
+\newcommand{\tselect}[2]{\type{\oplus} \{ #1 \}_{#2}}
 \newcommand{\tchannel}[0]{\type{\#}}
 \newcommand{\dual}[1]{\overline{#1}}
 \newcommand{\is}[0]{\triangleq}
@@ -100,32 +100,44 @@
   \begin{frame}{\slidetitle{Untyped \Picalc{}}{Motivation}}
     \begin{itemize}
       \setlength\itemsep{1em}
-      \sitem process algebra for concurrent and communicating processes
+      \sitem a process algebra
+      \sitem models concurrent and communicating processes
       \sitem processes communicate over channels
-      \sitem channels can be sent over channels (\emph{channel mobility})
+      \sitem channels are sent over channels (\emph{channel mobility})
       \sitem process reduction drives communication
     \end{itemize}
   \end{frame}
   
   \begin{frame}{\slidetitle{Untyped \Picalc{}}{Syntax}}
-    \begin{equation*}
-      \begin{aligned}
-        P, Q ::=& \; \PO       &&\text{(termination)}    \\ 
-        |& \; \new{x}P         &&\text{(scope restriction)} \\ 
-        |& \; \comp{P}{Q}      &&\text{(parallel composition)} \\ 
-        |& \; \recv{x}{v}P     &&\text{(input)}       \\ 
-        |& \; \send{x}{v}P     &&\text{(output)}       \\           
-        |& \; \branch{x}{i}{P} &&\text{(branch)}       \\ 
-        |& \; \select{x}{j}P   &&\text{(select)}       \\           
+    \begin{align*}
+        P, Q ::=& \; \PO                     &&\text{(termination)}    \\ 
+        |& \; \new{x}P                       &&\text{(scope restriction)} \\ 
+        |& \; \comp{P}{Q}                    &&\text{(parallel composition)} \\ 
+        |& \; \recv{x}{v}P                   &&\text{(input)}       \\ 
+        |& \; \send{x}{v}P                   &&\text{(output)}       \\           
+        |& \; \branch{x}{l_i : P_i}{i \in I} &&\text{(branch)}       \\ 
+        |& \; \select{x}{l_j}P               &&\text{(select)}       \\           
         \\
         v ::=& \; x && \text{(channels)}\\
-        | & \; b && \text{(base values)}\\
-      \end{aligned}
-    \end{equation*}
+        | & \; \ldots && \text{(base values)}\\
+    \end{align*}
   \end{frame}
 
-  \begin{frame}
-    EXAMPLE
+  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Example}}
+    \begin{minipage}[t]{.5\textwidth}
+    \begin{align*}
+        & S \, x \, \is \recv{x}{n} && \mathtt{if} \, n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \\
+        & && \mathtt{then} \, \select{x}{\mathtt{win}} \PO \\
+        & && \mathtt{else} \, \select{x}{\mathtt{miss}} S \, x
+    \end{align*}
+    \end{minipage}%
+    \begin{minipage}[t]{.5\textwidth}
+    \begin{align*}
+        & C \, x \, n \is && \send{x}{n} \\
+        & && \branch{x}{ \mathtt{win} : \PO; \\
+        & && \mathtt{miss} : C \, x \, (1+n)}{}
+    \end{align*}
+    \end{minipage}
   \end{frame}
 
   \begin{frame}{\slidetitle{Untyped \Picalc{}}{Reduction Relation}}
@@ -137,7 +149,7 @@
 
       \inferrule
       {i \in J}
-      {\comp{\select{x}{i}P}{\branch{x}{j}{Q}} \reducesto \comp{P}{Q_i}}
+      {\comp{\select{x}{l_i}P}{\branch{x}{l_j : Q_j}{j \in J}} \reducesto \comp{P}{Q_i}}
       {\rulename{Case}}\\
 
       \inferrule
@@ -208,8 +220,38 @@
     \sitem Commutativity of scopes
   }
 
-  \begin{frame}
-  EXAMPLE
+  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Example}}
+    \vspace{-1em}
+    \begin{align*}
+      & \new{x} && \comp{S \, x}{C \, x \, 0} \\
+      & && \Downarrow \\
+      & \new{x} && \comp{\recv{x}{n} \mathtt{if} \, n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \, \mathtt{then} \, \select{x}{\mathtt{win}} \PO \, \mathtt{else} \, \select{x}{\mathtt{miss}} S \, x}{\\
+      & && \send{x}{0} \branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 1}{}} \\
+      & && \Downarrow \\
+      & \new{x} && \comp{\mathtt{if} \, 0 \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \, \mathtt{then} \, \select{x}{\mathtt{win}} \PO \, \mathtt{else} \, \select{x}{\mathtt{miss}} S \, x}{\\
+      & && \branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 1}{}} \\
+      & && \Downarrow \\
+      & \new{x} && \comp{\select{x}{\mathtt{miss}} S \, x}{\branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 1}{}} \\
+      & && \Downarrow \\
+      & \new{x} && \comp{S \, x}{C \, x \, 1} \\
+    \end{align*}
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Example}}
+    \vspace{-1em}
+    \begin{align*}
+      & \new{x} && \comp{S \, x}{C \, x \, 13} \\
+      & && \Downarrow \\
+      & \new{x} && \comp{\recv{x}{n} \mathtt{if} \, n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \, \mathtt{then} \, \select{x}{\mathtt{win}} \PO \, \mathtt{else} \, \select{x}{\mathtt{miss}} S \, x}{\\
+      & && \send{x}{13} \branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 14}{}} \\
+      & && \Downarrow \\
+      & \new{x} && \comp{\mathtt{if} \, 13 \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \, \mathtt{then} \, \select{x}{\mathtt{win}} \PO \, \mathtt{else} \, \select{x}{\mathtt{miss}} S \, x}{\\
+      & && \branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 14}{}} \\
+      & && \Downarrow \\
+      & \new{x} && \comp{\select{x}{\mathtt{win}} \PO}{\branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 14}{}} \\
+      & && \Downarrow \\
+      & \new{x} && \comp{\PO}{\PO} \\
+    \end{align*}
   \end{frame}
   
   \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Motivation}}
@@ -233,6 +275,10 @@
   \end{frame}
 
   \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Example}}
+    \begin{align*}
+      S \is \trecv{\mathtt{Int}} \tselect{\mathtt{win} : \tend ; \; \mathtt{miss} : S}{} \\
+      C \is \tsend{\mathtt{Int}} \tbranch{\mathtt{win} : \tend ; \; \mathtt{miss} : C}{} \\
+    \end{align*}
   \end{frame}
 
   \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Properties}}
@@ -253,8 +299,8 @@
         S ::=& \; \tend      &&\text{(termination)}    \\ 
         |& \; \trecv{T}S     &&\text{(input)}       \\ 
         |& \; \tsend{T}S     &&\text{(output)}       \\           
-        |& \; \tbranch{i}{S_i} &&\text{(branch)}       \\ 
-        |& \; \tselect{i}{S_i} &&\text{(select)}       \\           
+        |& \; \tbranch{l_i : S_i}{i \in I} &&\text{(branch)}       \\ 
+        |& \; \tselect{l_i : S_i}{i \in I} &&\text{(select)}       \\           
         \\
         T ::=& \; S      &&\text{(session type)} \\
         | & \; \tchannel T && \text{(standard channel type)} \\
@@ -266,13 +312,13 @@
   \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Terms}}
     \begin{equation*}
       \begin{aligned}
-        P, Q ::=& \; \PO       &&\text{(termination)}    \\ 
-        |& \; \new{x}P         &&\text{(scope restriction)} \\ 
-        |& \; \comp{P}{Q}      &&\text{(parallel composition)} \\ 
-        |& \; \recv{e}{v}P     &&\text{(input)}       \\ 
-        |& \; \send{e}{v}P     &&\text{(output)}       \\           
-        |& \; \branch{e}{i}{P} &&\text{(branch)}       \\ 
-        |& \; \select{e}{j}P   &&\text{(select)}       \\           
+        P, Q ::=& \; \PO                     &&\text{(termination)}    \\ 
+        |& \; \new{x}P                       &&\text{(scope restriction)} \\ 
+        |& \; \comp{P}{Q}                    &&\text{(parallel composition)} \\ 
+        |& \; \recv{e}{v}P                   &&\text{(input)}       \\ 
+        |& \; \send{e}{v}P                   &&\text{(output)}       \\           
+        |& \; \branch{e}{l_i : P_i}{i \in I} &&\text{(branch)}       \\ 
+        |& \; \select{e}{l_j}P               &&\text{(select)}       \\           
         v ::=& \; e && \text{(channel endpoint)}\\
         |& \; b && \text{(base values)}\\
         e ::=& \; x \; | \; x^+ \; | \; x^- && \text{(channel endpoint)}\\
@@ -286,8 +332,8 @@
         &\dual{\tend}          &&\is \tend\\
         &\dual{\trecv{T}S}     &&\is \tsend{T}\dual{S}\\
         &\dual{\tsend{T}S}     &&\is \trecv{T}\dual{S}\\
-        &\dual{\tbranch{i}{S_i}} &&\is \tselect{i}{\dual{S_i}}\\
-        &\dual{\tselect{i}{S_i}} &&\is \tbranch{i}{\dual{S_i}}\\
+        &\dual{\tbranch{l_i : S_i}{i \in I}} &&\is \tselect{l_i : \dual{S_i}}{i \in I}\\
+        &\dual{\tselect{l_i : S_i}{i \in I}} &&\is \tbranch{l_i : \dual{S_i}}{i \in I}\\
         &\dual{\tchannel{T}}   &&\is \tchannel{T}\\
         \\
         &\dual{x}   &&\is x\\
