@@ -45,18 +45,17 @@
 % Constructors
 \newcommand{\PO}{\textbf{0}}
 \newcommand{\comp}[2]{#1 \parallel #2}
-\newcommand{\new}[1]{(\boldsymbol{\nu} #1) \,}
-\newcommand{\send}[2]{#1 !\langle #2 \rangle \, . \,}
-\newcommand{\recv}[2]{#1 ?( #2 ) \, . \,}
+\newcommand{\new}[2]{(\boldsymbol{\nu} \, #1 \, #2) \,}
+\newcommand{\send}[2]{#1 !\langle #2 \rangle .}
+\newcommand{\recv}[2]{#1 ?( #2 ) .}
 \newcommand{\branch}[3]{#1 \triangleright \{ #2 \}_{#3}}
-\newcommand{\select}[2]{#1 \triangleleft #2 \, . \,}
+\newcommand{\select}[2]{#1 \triangleleft #2 .}
 \newcommand{\type}[1]{\mathtt{#1}}
 \newcommand{\tend}[0]{\type{end}}
 \newcommand{\trecv}[1]{\type{?} #1 \type{.}}
 \newcommand{\tsend}[1]{\type{!} #1 \type{.}}
 \newcommand{\tbranch}[2]{\type{\&} \{ #1 \}_{#2}}
 \newcommand{\tselect}[2]{\type{\oplus} \{ #1 \}_{#2}}
-\newcommand{\tchannel}[0]{\type{\#}}
 \newcommand{\dual}[1]{\overline{#1}}
 \newcommand{\is}[0]{\triangleq}
 \newcommand{\types}[0]{\vdash}
@@ -104,19 +103,20 @@
       \sitem models concurrent and communicating processes
       \sitem processes communicate over channels
       \sitem channels are sent over channels (\emph{channel mobility})
-      \sitem process reduction drives communication
+      \sitem communication drives computation
     \end{itemize}
   \end{frame}
   
   \begin{frame}{\slidetitle{Untyped \Picalc{}}{Syntax}}
     \begin{align*}
         P, Q ::=& \; \PO                     &&\text{(termination)}    \\ 
-        |& \; \new{x}P                       &&\text{(scope restriction)} \\ 
+        |& \; \new{x}{y}P                    &&\text{(scope restriction)} \\ 
         |& \; \comp{P}{Q}                    &&\text{(parallel composition)} \\ 
         |& \; \recv{x}{v}P                   &&\text{(input)}       \\ 
         |& \; \send{x}{v}P                   &&\text{(output)}       \\           
         |& \; \branch{x}{l_i : P_i}{i \in I} &&\text{(branch)}       \\ 
         |& \; \select{x}{l_j}P               &&\text{(select)}       \\           
+        |& \; \ldots                         &&\text{(base constructs)} \\
         \\
         v ::=& \; x && \text{(channels)}\\
         | & \; \ldots && \text{(base values)}\\
@@ -124,32 +124,27 @@
   \end{frame}
 
   \begin{frame}{\slidetitle{Untyped \Picalc{}}{Example}}
-    \begin{minipage}[t]{.5\textwidth}
-    \begin{align*}
-        & S \, x \, \is \recv{x}{n} && \mathtt{if} \, n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \\
-        & && \mathtt{then} \, \select{x}{\mathtt{win}} \PO \\
-        & && \mathtt{else} \, \select{x}{\mathtt{miss}} S \, x
-    \end{align*}
-    \end{minipage}%
-    \begin{minipage}[t]{.5\textwidth}
-    \begin{align*}
-        & C \, x \, n \is && \send{x}{n} \\
-        & && \branch{x}{ \mathtt{win} : \PO; \\
+    \begin{alignat*}{3}
+        & Srv \, x \, \is \recv{x}{n} && \mathtt{if} \, && n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \\
+        & && \mathtt{then} \; && \select{x}{\mathtt{win}} \PO \\
+        & && \mathtt{else} \; && \select{x}{\mathtt{miss}} S \, x
+    \end{alignat*}
+    \begin{alignat*}{3}
+        & Cln \, x \, n \is \send{x}{n} \branch{x}{ && \mathtt{win} : \PO; \\
         & && \mathtt{miss} : C \, x \, (1+n)}{}
-    \end{align*}
-    \end{minipage}
+    \end{alignat*}
   \end{frame}
 
   \begin{frame}{\slidetitle{Untyped \Picalc{}}{Reduction Relation}}
     \begin{mathpar}
       \inferrule
       { }
-      {\comp{\send{x}{y}P}{\recv{x}{z}Q} \reducesto \comp{P}{\subst{Q}{z}{y}}}
+      {\new{x}{y} \comp{\send{x}{v}P}{\recv{y}{u}Q} \\ \reducesto \\ \new{x}{y} \comp{P}{\subst{Q}{u}{v}}}
       {\rulename{Comm}}\\
 
       \inferrule
       {i \in J}
-      {\comp{\select{x}{l_i}P}{\branch{x}{l_j : Q_j}{j \in J}} \reducesto \comp{P}{Q_i}}
+      {\new{x}{y} \comp{\select{x}{l_i}P}{\branch{y}{l_j : Q_j}{j \in J}} \\ \reducesto \\ \new{x}{y} \comp{P}{Q_i}}
       {\rulename{Case}}\\
 
       \inferrule
@@ -159,7 +154,7 @@
 
       \inferrule
       {P \reducesto P'}
-      {\new{x} P \reducesto \new{x} P'}
+      {\new{x}{y} P \reducesto \new{x}{y} P'}
       {\rulename{Res}}
 
       \inferrule
@@ -199,17 +194,17 @@
       
       \inferrule
       { }
-      {\new{x} \PO \equiv \PO}
+      {\new{x}{y} \PO \equiv \PO}
       {\rulename{ScopeEnd}}
       
       \inferrule
-      {x \not\in FV(Q)}
-      {\new{x} (\comp{P}{Q}) \equiv \comp{\new{x} P}{Q}}
+      {x \not\in FV(Q) \\ y \not\in FV(Q)}
+      {\new{x}{y} (\comp{P}{Q}) \equiv \comp{\new{x}{y} P}{Q}}
       {\rulename{ScopeExt}}
 
       \inferrule
       { }
-      {\new{x} \new{y} P \equiv \new{y} \new{x} P}
+      {\new{x}{y} \new{x'}{y'} P \equiv \new{x'}{y'} \new{x}{y} P}
       {\rulename{ScopeComm}}
     \end{mathpar}
   \end{frame}
@@ -222,45 +217,57 @@
 
   \begin{frame}{\slidetitle{Untyped \Picalc{}}{Example}}
     \vspace{-1em}
-    \begin{align*}
-      & \new{x} && \comp{S \, x}{C \, x \, 0} \\
+    \begin{alignat*}{2}
+      & \new{x}{y} && \comp{Srv \, x}{Cln \, y \, 0} \\
       & && \Downarrow \\
-      & \new{x} && \comp{\recv{x}{n} \mathtt{if} \, n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \, \mathtt{then} \, \select{x}{\mathtt{win}} \PO \, \mathtt{else} \, \select{x}{\mathtt{miss}} S \, x}{\\
-      & && \send{x}{0} \branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 1}{}} \\
+      & \new{x}{y} && \comp{\recv{x}{n} \mathtt{if} \; n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \; \mathtt{then} \; \select{x}{\mathtt{win}} \PO \; \mathtt{else} \; \select{x}{\mathtt{miss}} Srv \, x}{\\
+      & && \send{y}{0} \branch{y}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, y \, 1}{}} \\
       & && \Downarrow \\
-      & \new{x} && \comp{\mathtt{if} \, 0 \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \, \mathtt{then} \, \select{x}{\mathtt{win}} \PO \, \mathtt{else} \, \select{x}{\mathtt{miss}} S \, x}{\\
-      & && \branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 1}{}} \\
+      & \new{x}{y} && \comp{\mathtt{if} \; 0 \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \; \mathtt{then} \; \select{x}{\mathtt{win}} \PO \; \mathtt{else} \; \select{x}{\mathtt{miss}} Srv \, x}{\\
+      & && \branch{y}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, y \, 1}{}} \\
       & && \Downarrow \\
-      & \new{x} && \comp{\select{x}{\mathtt{miss}} S \, x}{\branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 1}{}} \\
+      & \new{x}{y} && \comp{\select{x}{\mathtt{miss}} Srv \, x}{\branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, x \, 1}{}} \\
       & && \Downarrow \\
-      & \new{x} && \comp{S \, x}{C \, x \, 1} \\
-    \end{align*}
+      & \new{x}{y} && \comp{Srv \, x}{Cln \, y \, 1} \\
+    \end{alignat*}{2}
   \end{frame}
 
   \begin{frame}{\slidetitle{Untyped \Picalc{}}{Example}}
     \vspace{-1em}
-    \begin{align*}
-      & \new{x} && \comp{S \, x}{C \, x \, 13} \\
+    \begin{alignat*}{2}
+      & \new{x}{y} && \comp{Srv \, x}{Cln \, y \, 13} \\
       & && \Downarrow \\
-      & \new{x} && \comp{\recv{x}{n} \mathtt{if} \, n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \, \mathtt{then} \, \select{x}{\mathtt{win}} \PO \, \mathtt{else} \, \select{x}{\mathtt{miss}} S \, x}{\\
-      & && \send{x}{13} \branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 14}{}} \\
+      & \new{x}{y} && \comp{\recv{x}{n} \mathtt{if} \; n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \; \mathtt{then} \; \select{x}{\mathtt{win}} \PO \; \mathtt{else} \; \select{x}{\mathtt{miss}} Srv \, x}{\\
+      & && \send{y}{13} \branch{y}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, y \, 14}{}} \\
       & && \Downarrow \\
-      & \new{x} && \comp{\mathtt{if} \, 13 \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \, \mathtt{then} \, \select{x}{\mathtt{win}} \PO \, \mathtt{else} \, \select{x}{\mathtt{miss}} S \, x}{\\
-      & && \branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 14}{}} \\
+      & \new{x}{y} && \comp{\mathtt{if} \; 13 \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \; \mathtt{then} \; \select{x}{\mathtt{win}} \PO \; \mathtt{else} \; \select{x}{\mathtt{miss}} Srv \, x}{\\
+      & && \branch{y}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, y \, 14}{}} \\
       & && \Downarrow \\
-      & \new{x} && \comp{\select{x}{\mathtt{win}} \PO}{\branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : C \, x \, 14}{}} \\
+      & \new{x}{y} && \comp{\select{x}{\mathtt{win}} \PO}{\branch{y}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, y \, 14}{}} \\
       & && \Downarrow \\
-      & \new{x} && \comp{\PO}{\PO} \\
-    \end{align*}
+      & \new{x}{y} && \comp{\PO}{\PO} \\
+    \end{alignat*}
   \end{frame}
   
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Motivation}}
-    \begin{itemize}
-      \setlength\itemsep{1em}
-      \sitem data types to structure data;\\
-             session types to structure communication
-      \sitem processes use channels according to their types
-    \end{itemize}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Overview}}
+    \begin{center}
+      data types to structure data;\\
+      session types to structure communication
+    \end{center}
+
+    \begin{block}{communication safety}
+      the exchanged data is of the expected type
+    \end{block}
+    \begin{block}{session fidelity}
+      communication is structured as per the session type
+    \end{block}
+    \begin{block}{privacy}
+      only the two communicating parties can listen on a channel
+    \end{block}
+    \begin{block}{no race conditions}
+      no two processes race to obtain the same resource
+    \end{block}
   \end{frame}
 
   \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Characteristics}}
@@ -274,56 +281,25 @@
     \end{description}
   \end{frame}
 
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Example}}
-    \begin{align*}
-      S \is \trecv{\mathtt{Int}} \tselect{\mathtt{win} : \tend ; \; \mathtt{miss} : S}{} \\
-      C \is \tsend{\mathtt{Int}} \tbranch{\mathtt{win} : \tend ; \; \mathtt{miss} : C}{} \\
-    \end{align*}
-  \end{frame}
-
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Properties}}
-    \begin{block}{communication safety}
-      the exchanged data is of the expected type
-    \end{block}
-    \begin{block}{session fidelity}
-      communication is structured as per the session type
-    \end{block}
-    \begin{block}{privacy}
-      session channels only owned by the two communicating parties
-    \end{block}
-  \end{frame}
-
   \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Types}}
-    \begin{equation*}
-      \begin{aligned}
-        S ::=& \; \tend      &&\text{(termination)}    \\ 
-        |& \; \trecv{T}S     &&\text{(input)}       \\ 
-        |& \; \tsend{T}S     &&\text{(output)}       \\           
-        |& \; \tbranch{l_i : S_i}{i \in I} &&\text{(branch)}       \\ 
-        |& \; \tselect{l_i : S_i}{i \in I} &&\text{(select)}       \\           
-        \\
-        T ::=& \; S      &&\text{(session type)} \\
-        | & \; \tchannel T && \text{(standard channel type)} \\
-        | & \; \ldots      &&\text{(base data types)} \\
-      \end{aligned}
-    \end{equation*}
-  \end{frame}
-
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Terms}}
-    \begin{equation*}
-      \begin{aligned}
-        P, Q ::=& \; \PO                     &&\text{(termination)}    \\ 
-        |& \; \new{x}P                       &&\text{(scope restriction)} \\ 
-        |& \; \comp{P}{Q}                    &&\text{(parallel composition)} \\ 
-        |& \; \recv{e}{v}P                   &&\text{(input)}       \\ 
-        |& \; \send{e}{v}P                   &&\text{(output)}       \\           
-        |& \; \branch{e}{l_i : P_i}{i \in I} &&\text{(branch)}       \\ 
-        |& \; \select{e}{l_j}P               &&\text{(select)}       \\           
-        v ::=& \; e && \text{(channel endpoint)}\\
-        |& \; b && \text{(base values)}\\
-        e ::=& \; x \; | \; x^+ \; | \; x^- && \text{(channel endpoint)}\\
-      \end{aligned}
-    \end{equation*}
+    \setlength{\abovedisplayskip}{0pt}
+    \setlength{\belowdisplayskip}{0pt}
+    \setlength{\abovedisplayshortskip}{0pt}
+    \setlength{\belowdisplayshortskip}{0pt}
+    \begin{align*}
+      Srv \is \trecv{\mathtt{Int}} \tselect{\mathtt{win} : \tend ; \; \mathtt{miss} : S}{} \\
+      Cln \is \tsend{\mathtt{Int}} \tbranch{\mathtt{win} : \tend ; \; \mathtt{miss} : C}{} \\
+    \end{align*}
+    \begin{align*}
+      S ::=& \; \tend      &&\text{(termination)}    \\ 
+      |& \; \trecv{T}S     &&\text{(input)}       \\ 
+      |& \; \tsend{T}S     &&\text{(output)}       \\           
+      |& \; \tbranch{l_i : S_i}{i \in I} &&\text{(branch)}       \\ 
+      |& \; \tselect{l_i : S_i}{i \in I} &&\text{(select)}       \\           
+      \\
+      T ::=& \; S      &&\text{(session type)} \\
+      | & \; \ldots      &&\text{(base data types)} \\
+    \end{align*}
   \end{frame}
 
   \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Duality}}
@@ -334,11 +310,6 @@
         &\dual{\tsend{T}S}     &&\is \trecv{T}\dual{S}\\
         &\dual{\tbranch{l_i : S_i}{i \in I}} &&\is \tselect{l_i : \dual{S_i}}{i \in I}\\
         &\dual{\tselect{l_i : S_i}{i \in I}} &&\is \tbranch{l_i : \dual{S_i}}{i \in I}\\
-        &\dual{\tchannel{T}}   &&\is \tchannel{T}\\
-        \\
-        &\dual{x}   &&\is x\\
-        &\dual{x^+} &&\is x^-\\
-        &\dual{x^-} &&\is x^+\\
       \end{aligned}
     \end{equation*}
   \end{frame}
@@ -348,7 +319,7 @@
       \datatype
       { }
       {\Gamma \ni e : S}
-      {\rulename{VarRef}}
+      {\rulename{Contains}}
 
       \datatype
       { }
@@ -362,12 +333,12 @@
       \small
       
       \inferrule
-      { }
-      {e : S \ni e : S}
+      {un(\Gamma)}
+      {\Gamma , x : S \ni x : S}
       {\rulename{Var}}
 
       \inferrule
-      {\Gamma = \Gamma_{un} \csplit \Gamma_e \\ un(\Gamma_{un}) \\ \Gamma_e \ni e : \tend}
+      {\Gamma \ni x : \tend}
       {\Gamma \types \PO}
       {\rulename{End}}
 
@@ -377,24 +348,41 @@
       {\rulename{Par}}
 
       \inferrule
-      {\Gamma , S : e , \dual{S} : \dual{e} \types P}
-      {\Gamma \types \new{x} P}
+      {\Gamma , x : S , y : \dual{S} \types P}
+      {\Gamma \types \new{x}{y} P}
       {\rulename{Res}}
 
       \inferrule
-      {\Gamma = \Gamma_e \csplit \Gamma_P \\ \Gamma_e \ni e : \trecv{T}S \\ \Gamma_P , e : S , v : T \types P}
-      {\Gamma \types \recv{e}{v} P}
+      {\Gamma = \Gamma_x \csplit \Gamma_P \\ \Gamma_x \ni x : \trecv{T}S \\ \Gamma_P , x : S , v : T \types P}
+      {\Gamma \types \recv{x}{v} P}
       {\rulename{In}}
 
       \inferrule
-      {\Gamma = \Gamma_e \csplit \Gamma_v \csplit \Gamma_P \\
+      {\Gamma = \Gamma_x \csplit \Gamma_v \csplit \Gamma_P \\
         \stacked{
-          \Gamma_e \ni e : \trecv{T}S \\\\
+          \Gamma_x \ni x : \trecv{T}S \\\\
           \Gamma_v \ni v : S} \\
         \Gamma_P \types P}
-      {\Gamma \types \send{e}{v} P}
+      {\Gamma \types \send{x}{v} P}
       {\rulename{Out}}
     \end{mathpar}
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Simpler Typesystems}}
+    correspondence with linear picalc
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Extra features}}
+    polymorphism, subtyping, dependent types
+  \end{frame}
+
+  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Further Properties}}
+    \begin{block}{deadlock freedom}
+    \end{block}
+    \begin{block}{lock freedom}
+    \end{block}
+    \begin{block}{progress}
+    \end{block}
   \end{frame}
 
   \begin{frame}{Acknowledgements}
