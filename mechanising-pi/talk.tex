@@ -1,0 +1,633 @@
+\documentclass[dvipsnames]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsbsy}
+\usepackage{mathbbol}
+\usepackage{mathtools}
+
+\usepackage{minibox}
+
+% For a wider page
+\usepackage{changepage}
+
+% Diagrams
+\usepackage{tikz}
+
+% Mathbb doesn't support digits
+\usepackage{bbm}
+
+% Example code
+\usepackage{listings}
+
+% Inference rules
+\usepackage{mathpartir}
+
+% Multiple columns
+\usepackage{multicol}
+
+% Newline inside table
+\usepackage{makecell}
+
+% Square bullet points
+\newcommand{\sitem}{\item[\raisebox{.45ex}{\rule{.6ex}{.6ex}}]}
+
+% Abbreviations
+\newcommand{\lambdacalc}{$\lambda$-calculus}
+\newcommand{\picalc}{$\pi$-calculus}
+\newcommand{\Picalc}{$\pi$-Calculus}
+
+% Typing rules
+\newcommand{\stacked}[1]{\mprset{flushleft} \inferrule*{}{#1}}
+\newcommand{\datatype}[2]{{\mprset{fraction={===}} \inferrule{#1}{#2}}}
+
+\newcommand{\type}[1]{\textcolor{BlueViolet}{\operatorname{#1}}}
+\newcommand{\constr}[1]{\textcolor{BurntOrange}{\operatorname{#1}}}
+\newcommand{\func}[1]{\textcolor{OliveGreen}{\operatorname{#1}}}
+
+% Constructors
+\newcommand{\PO}{\constr{\mathbb{0}}}
+\newcommand{\comp}[2]{#1 \; \constr{\parallel} \; #2}
+\newcommand{\new}{\constr{\boldsymbol{\nu}} \;}
+\newcommand{\send}[2]{#1 \; \constr{\langle} \; #2 \;\constr{\rangle} \;}
+\newcommand{\sendp}[2]{#1 \; \constr{\langle} \; #2 \; \constr{\rangle} \; . \;}
+\newcommand{\recv}[1]{#1 \; \constr{\mathbb{()}} \;}
+\newcommand{\recvp}[2]{#1 \; \constr{(} \; #2 \; \constr{)} \; . \; }
+\newcommand{\suc}{\constr{\scriptstyle 1+}}
+\newcommand{\nzero}{\constr{\scriptstyle 0}}
+\newcommand{\unit}{\constr{\mathbbm{1}}}
+\newcommand{\base}[1]{\constr{B[} \; #1 \; \constr{]}}
+\newcommand{\channel}[2]{\constr{C[} \; #1 \; \constr{;} \; #2 \; \constr{]}}
+\newcommand{\comma}{\; \constr{,} \;}
+
+% Functions
+\newcommand{\subst}[3]{#1 \; \func{[} \; #3 \; \func{\mapsto} \;#2 \; \func{]}}
+\newcommand{\op}[3]{#1 \; \func{\coloneqq} \; #2 \; \func{\cdot} \; #3}
+\newcommand{\opsquared}[3]{#1 \, \func{\coloneqq} \, #2 \, \func{\cdot^2} \, #3}
+\newcommand{\opctx}[3]{#1 \, \func{\coloneqq} \, #2 \, \func{\otimes} \, #3}
+\newcommand{\zero}{\func{0\cdot}}
+\newcommand{\one}{\func{1\cdot}}
+\newcommand{\li}{\func{\ell_i}}
+\newcommand{\lo}{\func{\ell_o}}
+\newcommand{\lz}{\func{\ell_{\o}}}
+\newcommand{\lio}{\func{\ell_{\#}}}
+
+% Types
+\newcommand{\Set}{\type{SET}}
+\newcommand{\reduce}[1]{\; \type{\longrightarrow}_{#1} \;}
+\newcommand{\types}[4]{#1 \; \type{;} \; #2 \; \type{\vdash} \; #3 \; \type{\triangleright} \; #4}
+\newcommand{\contains}[6]{#1 \; \type{;} \; #2 \; \type{\ni}_{#3} \; #4 \; \type{;} \; #5 \; \type{\triangleright} \; #6}
+\newcommand{\containsusage}[4]{#1 \; \type{\ni}_{#2} \; #3 \; \type{\triangleright} \; #4}
+\newcommand{\Var}{\type{VAR}}
+\newcommand{\Process}{\type{PROCESS}}
+\newcommand{\Unused}{\type{UNUSED}}
+\newcommand{\PreCtx}{\type{PRECTX}}
+\newcommand{\Ctx}{\type{CTX}}
+\newcommand{\Type}{\type{TYPE}\;}
+\newcommand{\Idx}{\type{IDX}\;}
+\newcommand{\Idxs}{\type{IDXS}}
+\newcommand{\Usage}{\type{USAGE}}
+\newcommand{\N}{\type{\mathbb{N}}}
+\newcommand{\Channel}{\type{CHANNEL}}
+\newcommand{\Rec}{\type{REC}}
+\newcommand{\Coalgebra}{\type{COALGEBRA}}
+\newcommand{\eq}[1]{\; \type{\simeq}_{#1} \;}
+\newcommand{\eqeq}{\; \type{\cong} \;}
+
+\usetheme[sectionpage=none,numbering=none]{metropolis}
+\setbeamertemplate{title separator}{}
+\date{}
+
+\title{mechanising\\ the linear \picalc}
+\author{\textbf{Uma Zalakain} \ and \  Ornela Dardha \\ University of Glasgow}
+
+\begin{document}
+  \maketitle
+
+  \note{
+    Hello everyone! I am Uma, and this talk is about my first experience formalising a type system (in this case a resource-aware \picalc{}) in Agda.
+    This is joint work with my PhD supervisor Ornela Dardha.
+    If you have any questions or comments please interrupt me at any time.
+  }
+
+  \begin{frame}{Overview}
+    \begin{itemize}
+      \setlength\itemsep{1em}
+      \sitem the \picalc
+      \begin{itemize}
+        \sitem introduction
+        \sitem syntax
+        \sitem semantics
+      \end{itemize}
+      \sitem the linear \picalc
+      \begin{itemize}
+        \sitem introduction
+        \sitem leftover type system
+        \sitem type safety
+      \end{itemize}
+      \sitem a co-contextual reformulation
+    \end{itemize}
+  \end{frame}
+
+  \begin{frame}{Notation}
+    \begin{equation*}
+      \begin{aligned}
+        & \type{TYPES}          && \text{blue violet, uppercased, indices as subscripts} \\
+        & \constr{constructors} && \text{burnt orange} \\
+        & \func{functions}      && \text{olive green} \\
+        & variables             && \text{black, in italics} \\
+      \end{aligned}
+    \end{equation*}
+  \end{frame}
+
+  \begin{frame}{The \picalc{}}
+    \begin{itemize}
+      \sitem a process algebra
+      \sitem models concurrent and communicating processes
+      \sitem processes communicate over channels
+      \sitem channels are sent over channels (\emph{channel mobility})
+      \sitem communication drives computation
+    \end{itemize}
+  \end{frame}
+
+  \note{
+    A little introduction to the \picalc{}, for those of you that are less familiar with it.
+    The \picalc{} is a foundational model for communication, sort of like the \lambdacalc{} is for computation.
+    The \picalc{} models processes communicating with one another over communication channels.
+    It features channel mobility: channels can be sent over channels. 
+    Process doing the sending and process doing the receiving can be syntactically far from each other.
+    More on this later, when we introduce the syntax.
+
+    In the linear \picalc{} channels must be used exactly once: they can't be discarded, they can't be duplicated.
+    Why is this interesting? It provides us more fine-grained control over communication and allows us to state more interesting type safety properties.
+    They are sufficient as a target for encoding the session-typed \picalc{}.
+
+    This project comes from the idea of creating a common base framework that can be used to mechanise a bunch of type systems that are built on top of the \picalc{}, and so it's our first baby step.
+  }
+
+  \begin{frame}{Well-Scoped Syntax}
+    \begin{mathpar}
+      \inferrule
+      {n : \N}
+      {\nzero : \Var_{\suc n}}
+
+      \inferrule
+      {x : \Var_n}
+      {\suc x : \Var_{\suc n}}
+    \end{mathpar}
+
+    \begin{equation*}
+      \begin{aligned}
+        \Process_n ::=& \; \PO_n               &&\text{(inaction)}    \\ 
+        |& \; \new{} \Process_{\suc n}         &&\text{(restriction)} \\ 
+        |& \; \comp{\Process_n}{\Process_n}    &&\text{(parallel)}     \\ 
+        |& \; \recv{\Var_n}{}\Process_{\suc n} &&\text{(input)}       \\ 
+        |& \; \send{\Var_n}{\Var_n}\Process_n  &&\text{(output)}       \\           
+      \end{aligned}
+    \end{equation*}
+
+    \centering
+    e.g.
+    \begin{equation*}
+      \small
+      \begin{aligned}
+        & (\new{}x ) && (\comp {\recvp{x}{y} && \sendp{y}{a} && \PO} {(\new{} y) && (\sendp{x}{y} && \recvp{y}{z} && \PO)})
+        \\
+        & \new{} && (\comp {\recv{0} && \send{0}{a} && \PO} {\new{} && (\send{1}{0} && \recv{0} && \PO)})
+        \\
+      \end{aligned}
+    \end{equation*}
+  \end{frame}
+
+  \note[itemize]{
+    \sitem \picalc{} syntax, well-scoped by construction through de Bruijn indices
+    \sitem go over the constructors
+  }
+
+  \begin{frame}{Structural Congruence}
+    \begin{mathpar}
+      \inferrule
+      { }
+      {\constr{comp-assoc} : \comp{P}{(\comp{Q}{R})} \eqeq \comp{(\comp{P}{Q})}{R}}
+
+      \inferrule
+      { }
+      {\constr{comp-comm} : \comp{P}{Q} \eqeq \comp{Q}{P}}
+      
+      \inferrule
+      { }
+      {\constr{comp-end} : \comp{P}{\PO_n} \eqeq P}
+      
+      \inferrule
+      { }
+      {\constr{scope-end} : \new \PO_{\suc n} \eqeq \PO_n}
+      
+      \inferrule
+      {uQ : \Unused_{\nzero} \; Q}
+      {\constr{scope-ext} : \new (\comp{P}{Q}) \eqeq \comp{(\new P)}{\func{lower}_{\nzero} \; \; Q \; uQ}}
+
+      \inferrule
+      { }
+      {\constr{scope-comm} : \new \new P \eqeq \new \new \func{swap}_{\nzero} \; P}
+    \end{mathpar}
+
+    \centering
+    $\eq{}$ is the congruent equivalence closure of $\eqeq$
+  \end{frame}
+
+  \note[itemize]{
+    \sitem Parallel composition is associative, commutative and has $\PO$ as neutral element
+    \sitem Garbage collection
+    \sitem Scope extrusion (keep a proof $uQ$ alongside)
+    \sitem Commutativity of scopes
+  }
+
+  \begin{frame}{Reduction Relation}
+    \begin{mathpar}
+      \inferrule
+      { }
+      {\constr{internal} : \Channel_n}
+
+      \inferrule
+      {i : \Var_n}
+      {\constr{external} \; i : \Channel_n}
+
+      \inferrule
+      {i \; j : \Var_n \\ P : \Process_{\suc n} \\ Q : \Process_n}
+      {\constr{comm} : \comp{\recv{i}P}{\send{i}{j}{Q}} \reduce{\constr{external} \; i} \comp{\func{lower}_{\nzero} \; (\subst{P}{\suc j}{\nzero}) \; uP'}{Q}}
+
+      \inferrule
+      {red : P \reduce{c} P'}
+      {\constr{par} \; red : \comp{P}{Q} \reduce{c} \comp{P'}{Q}}
+
+      \inferrule
+      {red : P \reduce{c} Q}
+      {\constr{res} \; red : \new P \reduce{\func{dec}\; c} \new Q}
+
+      \inferrule
+      {eq : P \eq{} P' \\ red : P' \reduce{c} Q}
+      {\constr{struct} \; eq \; red : P \reduce{c} Q}
+    \end{mathpar}
+  \end{frame}
+
+  \note[itemize]{
+    \sitem Same scope before and after reduction
+    \sitem Scope restriction is preserved (can be eliminated in strictly linear systems)
+    \sitem Common channel $i$
+    \sitem We keep track of $i$ at the type level
+    \sitem Goes under parallel composition and scope restriction
+    \sitem $\func{dec}$ saturates on $\constr{internal}$
+  }
+
+  \begin{frame}[t]
+    \begin{columns}[T]
+      \begin{column}{0.5\textwidth}
+        \centering
+        \vspace*{10em}
+        \textcolor{gray}{untyped syntax \\ operational semantics}
+        \vspace*{10em}
+      \end{column}
+      \vrule width 2pt
+      \begin{column}{0.5\textwidth}
+        \centering
+        \vspace*{10em}
+        \framebox{linear \picalc{}}
+        \vspace*{10em}
+      \end{column}
+    \end{columns}
+  \end{frame}
+    
+  \begin{frame}{The Linear \Picalc}
+    \begin{itemize}
+      \sitem communication channels must be used exactly once
+      \sitem privacy; no race conditions
+      \sitem serves as a target encoding for session types
+    \end{itemize}
+  \end{frame}
+    
+  \begin{frame}{Typing with Leftovers}
+    \begin{itemize}
+      \sitem syntax directed
+      \sitem independent type and usage contexts
+      \sitem extra leftover usage context
+      \sitem intrinsic context splits
+      \sitem parametrised by a set of usage coalgebras
+    \end{itemize}
+  \end{frame}
+  
+  \note[itemize]{
+  \sitem Only choice is in the types and usage annotations on scope restriction
+  \sitem A syntax directed type system allows for inversion lemmas
+  \sitem More on intrinsic/extrinsic later
+  \sitem Linear, graded and shared types are all instances of an usage algebra
+  }
+
+  \begin{frame}{Usage Coalgebra}
+    \begin{columns}
+      \begin{column}{0.3\textwidth}
+        \begin{itemize}
+          \sitem partial
+          \sitem neutral element $\zero$
+          \sitem minimal element $\zero$
+          \sitem associative
+          \sitem commutative
+          \sitem deterministic
+          \sitem cancellative
+          \sitem decidable
+        \end{itemize}
+      \end{column}
+      \begin{column}{0.7\textwidth}
+        \begin{equation*}
+          \begin{aligned}
+            &\zero                  &:{} &                 &        & C \\
+            &\one                   &:{} &                 &        & C \\
+            &\op{\_}{\_}{\_}        &:{} &                 &        & C \to C \to C \to \Set \\
+          \end{aligned}
+        \end{equation*}
+        \centering
+        \begin{tabular}{l | l | l}
+          & carrier & operation \\
+          \hline
+          \textbf{linear} & \makecell[cl]{$\constr{0} \, : \, \type{Lin}$ \\ $\constr{1} \, : \, \type{Lin}$} & \makecell[cl]{$\op{\constr{0}}{\constr{0}}{\constr{0}}$ \\ $\op{\constr{1}}{\constr{1}}{\constr{0}}$ \\ $\op{\constr{1}}{\constr{0}}{\constr{1}}$} \\
+          \hline
+          \textbf{graded} & \makecell[cl]{$\nzero \, : \type{Gra}$ \\ $\suc \, : \type{Gra} \to \type{Gra}$} & \makecell[cl]{$\forall \, x \, y \, z$ \\ $\to x \, \type{\equiv} \, y \, \func{+} \, z$ \\ $\to \op{x}{y}{z}$} \\
+          \hline
+          \textbf{shared} & $\constr{\omega} \, : \, \type{Sha}$ & $\op{\constr{\omega}}{\constr{\omega}}{\constr{\omega}}$ \\
+        \end{tabular}
+      \end{column}
+    \end{columns}
+  \end{frame}
+
+  \note[itemize]{
+    \sitem Model as a ternary relation
+    \sitem Decidable, deterministic, cancellative and has a minimal element
+  }
+
+  \begin{frame}{Indexed Usage Coalgebras}
+    \begin{equation*}
+      \begin{aligned}
+        &\Idx               &: \; &\Set \\
+        &\type{\exists IDX} &: \; &\Idx \\
+        &\Usage             &: \; &\Idx \to \Set \\
+        &\type{COALGEBRAS}    &: \; &(idx : \Idx) \to \Coalgebra_{\Usage_{idx}} \\
+      \end{aligned}
+    \end{equation*}
+
+  \end{frame}
+
+  \note[itemize]{
+    \sitem Lump multiple algebras together
+  }
+  
+  \begin{frame}{Capability Notation}
+    \textbf{capability} input / output
+    \hspace{1em}
+    \textbf{multiplicity} $\zero$, $\one$, \ldots
+
+    \begin{equation*}
+      \begin{aligned}
+        &C^{\func{2}} &&= C \type{\times} C \\
+        &\lz          &&= \zero \comma \zero \\
+        &\li          &&= \one \comma \zero \\
+        &\lo          &&= \zero \comma \one \\
+        &\lio         &&= \one \comma \one \\
+        &\opsquared{(x_l \comma x_r)}{(y_l \comma y_r)}{(z_l \comma z_r)} &&= (\op{x_l}{y_l}{z_l}) \times (\op{x_r}{y_r}{z_r}) \\
+      \end{aligned}
+    \end{equation*}
+  \end{frame}
+
+  \note[itemize]{
+    \sitem Notation borrowed from linear \picalc{}
+    \sitem We use two carriers per channel: one for input, one for output
+  }
+  
+  \begin{frame}{Types}
+    \begin{mathpar}
+      \inferrule
+      { }
+      {\unit : \Type}
+
+      \inferrule
+      {n : \N}
+      {\base{n} : \Type}
+      
+      \inferrule
+      {t : \Type \\ \stacked{idx : \Idx \\\\ x : \Usage_{idx}^{\func{2}}}}
+      {\channel{t}{x} : \Type}
+    \end{mathpar}
+
+    \centering
+    \vfill{}
+    \textit{e.g.} $\channel{\channel{\unit}{\constr{\omega}}}{\li}$
+  \end{frame}
+
+  \begin{frame}{Typing Relation}
+    \begin{adjustwidth}{-1.5em}{-1.5em}
+    \begin{description}
+    \item [$\PreCtx_n$] list of $\Type$s of length $n$
+    \item [$\Idxs_n$] list of $\Idx$s of length $n$
+    \item [$\Ctx_{idxs}$] list of $\Usage^{\func{2}}$s indexed over $idxs  \; : \Idxs_n$
+    \end{description}
+    
+    \begin{mathpar}
+    {\small
+    \datatype{
+      \gamma : \PreCtx_n \\
+      \stacked{
+        idxs : \Idxs_n \\\\
+        \Gamma : \Ctx_{idxs}} \\
+      P : \Process_n \\
+      \Delta : \Ctx_{idxs}}
+    {\types{\gamma}{\Gamma}{P}{\Delta} : \Set}}
+
+    {\small
+    \mprset {sep=.8em}
+    \datatype{
+      \gamma : \PreCtx_n \\
+      \stacked{
+        idxs : \Idxs_n \\\\
+        \Gamma : \Ctx_{idxs}} \\
+      i : \Var_n \\
+      t : \Type \\
+      \stacked{
+        idx : \Idx \\\\
+        y : \Usage_{idx}^{\func{2}}} \\
+      \Delta : \Ctx_{idxs}}
+    {\contains{\gamma}{\Gamma}{i}{t}{y}{\Delta} : \Set}}
+    \end{mathpar}
+    \end{adjustwidth}
+  \end{frame}
+
+  \note[itemize]{
+  \sitem Typing judgment through typing relations
+  \sitem One relation on processes, one relation on variable references (omitted for brevety)
+  \sitem Relation on variable references uses the monoid to split multiplicities
+  }
+  
+  \begin{frame}{Variable Typing Rules}
+    \begin{mathpar}
+      \inferrule
+      {\opsquared{x}{y}{z}}
+      {\nzero : \contains{\gamma \comma t}{\Gamma \comma x}{\nzero}{t}{y}{\Gamma \comma z}}
+      
+      \inferrule
+      {\hspace{-0.1em} loc_i : \contains{\gamma \hspace{1.4em}}{\Gamma \hspace{1.7em}}{\hspace{1em} i}{t}{x}{\Delta}}
+      {\suc \; loc_i : \contains{\gamma \comma t'}{\Gamma \comma x'}{\suc i}{t}{x}{\Delta \comma x'}}
+    \end{mathpar}
+  \end{frame}
+
+  \note[itemize]{
+    \sitem Constructor completely determined by $i$
+    \sitem User alleviated from proof burden $\opsquared{x}{y}{z}$, which can be computed given $x$ and $y$
+  }
+  
+  \begin{frame}{Process Typing Rules}
+    \begin{mathpar}
+      \inferrule
+      { }
+      {\PO : \types{\gamma}{\Gamma}{\PO}{\Gamma}}
+
+      \inferrule
+    {l \hspace{0.1em} : \types{\gamma}{\Gamma \hspace{0.3em}}{P}{\Delta} \\\\
+      r : \types{\gamma}{\Delta}{Q}{\Xi}}
+    {\comp{l}{r} : \types{\gamma}{\Gamma}{\comp{P}{Q}}{\Xi}}
+    \end{mathpar}
+  \end{frame}
+  
+  \note[itemize]{
+  \sitem Instead of one authoritative context split, give decision power to P
+  }
+
+  \begin{frame}{Process Typing Rules}
+    \begin{mathpar}
+    \inferrule
+    {t : \Type \\ x : \Usage_{idx}^{\func{2}} \\ y : \Usage_{idx'} \\\\
+      cont : \types{\gamma \comma \channel{t}{x}}{\Gamma \comma (y \comma y) }{P}{\Delta \comma \lz}}
+    {\new  \; t \; x \; y \; cont : \types{\gamma}{\Gamma}{\new P}{\Delta}}
+
+    \inferrule
+        {\stacked{
+            chan_i : \contains{\gamma \hspace{1.1em}}{\Gamma \hspace{1.5em}}{i}{\channel{t}{x}}{\li}{\Xi} \\\\
+            cont \hspace{0.4em} : \types{\gamma \comma t}{\Xi \comma x}{P \hspace{4.6em}}{\Theta \comma \lz}}}
+        {\recv{chan_i}{cont} : \types{\gamma}{\Gamma}{\recv{i}{P}}{\Theta}}
+  
+    \inferrule
+        {\ldots}
+        {\send{chan_i}{loc_j}{cont} \; \ldots}
+  
+    \end{mathpar}
+  \end{frame}
+
+  \note[itemize]{
+  \sitem Newly introduced channels are balanced
+  \sitem The multiplicities of new variables must be exhausted
+  }
+
+  \begin{frame}[fragile]{Example Derivation}
+    \begin{lstlisting}[mathescape]
+      $\func{p}$ : $\Process_{\suc \constr{zero}}$
+      $\func{p}$ = $\new{}(\comp{\recv{\nzero} (\recv{\nzero} \PO)}$
+            ${\new{} (\send{\suc \; \nzero} {\nzero} \send{\nzero}{\suc \; \suc \; \nzero} \PO)})$
+
+      $\func{\_}$ : $\types{\constr{[]} \comma \unit}{\constr{[]} \comma \func{\omega}}{\func{p}}{\func{\epsilon}}$
+      $\func{\_}$ = $(\new \; \channel{\unit}{\func{\omega}} \; \li \; \one) \; (\comp{\recv{\nzero}{(\recv{\nzero}{\PO}})}$
+            ${(\new \; \unit \; \func{\omega} \; \one) \; (\send{\suc \; \nzero}{\nzero}{\send{\nzero}{\suc \; \suc \; \nzero}{\PO}})})$
+    \end{lstlisting}
+  \end{frame}
+
+  \begin{frame}{Before Leftover Typing}
+    \begin{itemize}
+    \sitem using functions to update usage contexts
+      \begin{mathpar}
+        \inferrule
+        {\ldots \\ (\func{update}_i \; \ldots \; \Gamma) \vdash P \\ \ldots}
+        {\Gamma \; \type{\vdash} \; \recv{i}{P}}
+      \end{mathpar}
+    \sitem extrinsic context splits
+      \begin{mathpar}
+        \inferrule
+        {\opctx{\Gamma}{\Delta}{\Xi} \\\\
+         \Delta \; \type{\vdash} P \\\\
+         \Xi \; \type{\vdash} Q}
+        {\Gamma \; \type{\vdash} \; \comp{P}{Q}}
+      \end{mathpar}
+    \end{itemize}
+  \end{frame}
+
+  \note[itemize]{
+  \sitem The extrinsic context split is top-down, P already knows what it needs
+  }
+
+  \begin{frame}{Subject Congruence}
+    \begin{itemize}
+      \setlength\itemsep{1em}
+      \sitem \textbf{framing} the only resources the well-typedness of a process depends on are the ones used by it.
+
+      \sitem \textbf{weakening} inserting a new variable into the context preserves the well-typedness of a process as long as the usage annotation of the inserted variable is preserved as a leftover.
+
+      \sitem \textbf{strengthening} removing an unused variable preserves the well-typedness of a process.
+
+      \sitem \textbf{subject congruence} applying structural congruence rules to a well typed process preserves its well-typedness.
+    \end{itemize}
+  \end{frame}
+
+  \note[itemize]{
+  \sitem First three by induction on \textsc{Types} and \textsc{VarRef}
+  \sitem First three state for the first time for the \picalc{}
+  }
+
+  \begin{frame}{Subject Reduction}
+    \begin{itemize}
+      \setlength\itemsep{2em}
+      \sitem \textbf{renaming} \\
+      substituting a variable $i$ for a variable $j$ in a well-typed process $P$ results in a well-typed process as long as the leftovers at index $j$ after $P$ are at least the consumption made by $P$ at index $i$.
+
+      \sitem \textbf{subject reduction} \\
+      let $\types{\gamma}{\Gamma}{P}{\Xi}$ and $P \reduce{c} Q$,
+      \begin{itemize}
+        \sitem if $c$ is $\constr{internal}$, then $\types{\gamma}{\Gamma}{Q}{\Xi}$.
+        \sitem if $c$ is $\constr{external} \; i$ and $\containsusage{\Gamma}{i}{\lio}{\Delta}$, then $\types{\gamma}{\Delta}{Q}{\Xi}$.
+      \end{itemize}
+    \end{itemize}
+  \end{frame}
+
+  \begin{frame}[t]
+    \begin{columns}[T]
+      \begin{column}{0.5\textwidth}
+        \centering
+        \vspace*{10.5em}
+        \textcolor{gray}{linear \picalc{}}
+        \vspace*{10em}
+      \end{column}
+      \vrule width 2pt
+      \begin{column}{0.5\textwidth}
+        \centering
+        \vspace*{10em}
+        \minibox[frame]{co-contextual \\ reformulation}
+        \vspace*{10em}
+      \end{column}
+    \end{columns}
+  \end{frame}
+  
+  \begin{frame}{Co-Contextual Reformulation}
+    \begin{itemize}
+      \sitem goal: decidable typechecking
+      \sitem how? infer the types of channels
+      \sitem bidirectional typing does not apply
+      \sitem traverse terms bottom up collecting constraints
+      \sitem CSP that results in type substitutions
+      \sitem solve constraints eagerly
+      \sitem prove sound and complete wrt the usual type system
+      \sitem ongoing work (get in touch if you are interested!)
+    \end{itemize}
+  \end{frame}
+
+  \begin{frame}
+    \centering
+    \Huge{thank you!} \\
+    \Huge{\textasciicircum{}\_\textasciicircum{}} \\
+    \Huge{questions?}
+  \end{frame}
+\end{document}
