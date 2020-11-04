@@ -301,8 +301,9 @@
     
   \begin{frame}{The Linear \Picalc}
     \begin{itemize}
-      \sitem communication channels must be used exactly once
-      \sitem privacy; no race conditions
+      \sitem channels must be used exactly once
+      \sitem communication privacy
+      \sitem no race conditions
       \sitem serves as a target encoding for session types
     \end{itemize}
   \end{frame}
@@ -616,9 +617,8 @@
       \sitem goal: decidable typechecking
       \sitem how? infer the types of channels
       \sitem bidirectional typing does not apply
-      \sitem traverse terms bottom up collecting constraints
-      \sitem CSP that results in type substitutions
-      \sitem solve constraints eagerly
+      \sitem traverse terms bottom up collecting equations on types
+      \sitem solvable equations result in tautologies or substitutions
       \sitem prove sound and complete wrt the usual type system
       \sitem ongoing work (get in touch if you are interested!)
     \end{itemize}
