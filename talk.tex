@@ -40,7 +40,7 @@
 % Typing rules
 \newcommand{\stacked}[1]{\mprset{flushleft} \inferrule*{}{#1}}
 \newcommand{\datatype}[2]{{\mprset{fraction={===}} \inferrule{#1}{#2}}}
-\newcommand{\rulename}[1]{{\tiny \textsc{(#1)}}}
+\newcommand{\rulename}[1]{{\tiny \textsc{#1}}}
 
 % Constructors
 \newcommand{\PO}{\textbf{0}}
@@ -59,63 +59,115 @@
 \newcommand{\dual}[1]{\overline{#1}}
 \newcommand{\is}[0]{\triangleq}
 \newcommand{\types}[0]{\vdash}
-\newcommand{\csplit}[0]{\otimes}
 
 \newcommand{\reducesto}{\Longrightarrow}
 \newcommand{\subst}[3]{{#1 \left[ #2 \rightarrow #3 \right]}}
 
-\newcommand{\slidetitle}[2]{#2 \hspace*{\fill} [#1]}
 
 \usetheme[sectionpage=none,numbering=none]{metropolis}
 \setbeamertemplate{title separator}{}
 \date{}
 
 
-\title{Introduction to the\\ Session Typed \Picalc{}}
-\author{\textbf{Uma Zalakain}\\ University of Glasgow}
+\title{session types}
 
 \begin{document}
   \maketitle
 
-  \begin{frame}
-    \begin{itemize}
-      \setlength\itemsep{1em}
-      \sitem untyped \picalc{}
-        \begin{itemize}
-          \sitem motivation
-          \sitem syntax
-          \sitem operational semantics
-        \end{itemize}
-      \sitem session typed \picalc{}
-        \begin{itemize}
-          \sitem motivation
-          \sitem types
-          \sitem type system
-          \sitem properties
-        \end{itemize}
-    \end{itemize}
+  \begin{frame}{overview}
+    \begin{center}
+      data types to structure data;\\
+      session types to structure communication
+    \end{center}
   \end{frame}
 
-  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Motivation}}
+  \begin{frame}{key ingredients}
+    \begin{description}
+      \setlength\itemsep{1em}
+    \item[endpoints] each channel has two endpoints
+    \item[linearity] channel endpoints are uniquely owned
+    \item[duality] relation between types of opposite endpoints
+    \item[structure] session types follow the structure of communication
+    \item[change] session types evolve as communication occurs
+    \end{description}
+  \end{frame}
+
+  \begin{frame}{properties}
+    \begin{block}{communication safety}
+      the exchanged data is of the expected type
+    \end{block}
+    \begin{block}{session fidelity}
+      communication is structured as per the session type
+    \end{block}
+    \begin{block}{privacy}
+      only the two communicating parties can listen on a channel
+    \end{block}
+    \begin{block}{no race conditions}
+      no two processes race to obtain the same resource
+    \end{block}
+    \begin{block}{\textcolor{red}{deadlocks!}}
+      \textcolor{red}{circular dependency between channels}
+    \end{block}
+  \end{frame}
+
+  \begin{frame}{types}
+    \textbf{coinductive}
+    \setlength{\abovedisplayskip}{0pt}
+    \setlength{\belowdisplayskip}{0pt}
+    \setlength{\abovedisplayshortskip}{0pt}
+    \setlength{\belowdisplayshortskip}{0pt}
+    \begin{align*}
+      S ::=& \; \tend      &&\text{(termination)}    \\ 
+      |& \; \trecv{T}S     &&\text{(input)}       \\ 
+      |& \; \tsend{T}S     &&\text{(output)}       \\           
+      |& \; \tbranch{l_i : S_i}{i \in I} &&\text{(branch)}       \\ 
+      |& \; \tselect{l_i : S_i}{i \in I} &&\text{(select)}       \\           
+      \\
+      T ::=& \; S      &&\text{(session type)} \\
+      | & \; \ldots      &&\text{(base data types)} \\
+    \end{align*}
+    \begin{align*}
+      Srv \is \trecv{\mathtt{\mathbb{N}}} \tselect{\mathtt{win} : \tend ; \; \mathtt{miss} : Srv}{} \\
+      Cln \is \tsend{\mathtt{\mathbb{N}}} \tbranch{\mathtt{win} : \tend ; \; \mathtt{miss} : Cln}{} \\
+    \end{align*}
+  \end{frame}
+
+  \begin{frame}{duality}
+    \begin{equation*}
+      \begin{aligned}
+        &\dual{\tend}          &&\is \tend\\
+        &\dual{\trecv{T}S}     &&\is \tsend{T}\dual{S}\\
+        &\dual{\tsend{T}S}     &&\is \trecv{T}\dual{S}\\
+        &\dual{\tbranch{l_i : S_i}{i \in I}} &&\is \tselect{l_i : \dual{S_i}}{i \in I}\\
+        &\dual{\tselect{l_i : S_i}{i \in I}} &&\is \tbranch{l_i : \dual{S_i}}{i \in I}\\
+      \end{aligned}
+    \end{equation*}
+  \end{frame}
+
+  \begin{frame}{languages for concurrent communication}
+    \colorbox{red}{TODO}
+  \end{frame}
+  
+  \begin{frame}{example: the \picalc{}}
     \begin{itemize}
       \setlength\itemsep{1em}
       \sitem a process algebra
-      \sitem models concurrent and communicating processes
       \sitem processes communicate over channels
       \sitem channels are sent over channels (\emph{channel mobility})
       \sitem communication drives computation
     \end{itemize}
   \end{frame}
-  
-  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Syntax}}
+
+  \begin{frame}{syntax}
+    \textbf{coinductive}
     \begin{align*}
-        P, Q ::=& \; \PO                     &&\text{(termination)}    \\ 
-        |& \; \new{x}{y}P                    &&\text{(scope restriction)} \\ 
-        |& \; \comp{P}{Q}                    &&\text{(parallel composition)} \\ 
-        |& \; \recv{x}{v}P                   &&\text{(input)}       \\ 
-        |& \; \send{x}{v}P                   &&\text{(output)}       \\           
-        |& \; \branch{x}{l_i : P_i}{i \in I} &&\text{(branch)}       \\ 
-        |& \; \select{x}{l_j}P               &&\text{(select)}       \\           
+        P, Q ::=& \; \PO                     &&\text{(termination)}    \\
+        |& \; \new{x}{y}P                    &&\text{(scope restriction)} \\
+        |& \; \comp{P}{Q}                    &&\text{(parallel composition)} \\
+        |& \; \recv{x}{v}P                   &&\text{(input)}       \\
+        |& \; \send{x}{v}P                   &&\text{(output)}       \\
+        |& \; \branch{x}{l_i : P_i}{i \in I} &&\text{(branch)}       \\
+        |& \; \select{x}{l_j}P               &&\text{(select)}       \\
         |& \; \ldots                         &&\text{(base constructs)} \\
         \\
         v ::=& \; x && \text{(channels)}\\
@@ -123,28 +175,16 @@
     \end{align*}
   \end{frame}
 
-  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Example}}
-    \begin{alignat*}{3}
-        & Srv \, x \, \is \recv{x}{n} && \mathtt{if} \, && n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \\
-        & && \mathtt{then} \; && \select{x}{\mathtt{win}} \PO \\
-        & && \mathtt{else} \; && \select{x}{\mathtt{miss}} S \, x
-    \end{alignat*}
-    \begin{alignat*}{3}
-        & Cln \, x \, n \is \send{x}{n} \branch{x}{ && \mathtt{win} : \PO; \\
-        & && \mathtt{miss} : C \, x \, (1+n)}{}
-    \end{alignat*}
-  \end{frame}
-
-  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Reduction Relation}}
+  \begin{frame}{operational semantics}
     \begin{mathpar}
       \inferrule
       { }
-      {\new{x}{y} \comp{\send{x}{v}P}{\recv{y}{u}Q} \\ \reducesto \\ \new{x}{y} \comp{P}{\subst{Q}{u}{v}}}
+      {\new{x}{y} (\comp{\send{x}{v}P}{\recv{y}{u}Q}) \\ \reducesto \\ \new{x}{y} (\comp{P}{\subst{Q}{u}{v}})}
       {\rulename{Comm}}\\
 
       \inferrule
       {i \in J}
-      {\new{x}{y} \comp{\select{x}{l_i}P}{\branch{y}{l_j : Q_j}{j \in J}} \\ \reducesto \\ \new{x}{y} \comp{P}{Q_i}}
+      {\new{x}{y} (\comp{\select{x}{l_i}P}{\branch{y}{l_j : Q_j}{j \in J}}) \\ \reducesto \\ \new{x}{y} (\comp{P}{Q_i})}
       {\rulename{Case}}\\
 
       \inferrule
@@ -158,20 +198,13 @@
       {\rulename{Res}}
 
       \inferrule
-      {P \equiv{} P' \\ P' \reducesto P''}
-      {P \reducesto P''}
+      {P' \equiv{} P \\ P \reducesto Q \\ Q \equiv{} Q'}
+      {P' \reducesto Q'}
       {\rulename{StructCong}}
     \end{mathpar}
   \end{frame}
 
-  \note[itemize]{
-    \sitem Same scope before and after reduction
-    \sitem Common channel $i$
-    \sitem Goes under parallel composition and scope restriction
-  }
-
-
-  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Structural Congruence}}
+  \begin{frame}{structural congruence}
     \begin{center}
       congruent equivalence closure of
     \end{center}
@@ -198,7 +231,7 @@
       {\rulename{ScopeEnd}}
       
       \inferrule
-      {x \not\in FV(Q) \\ y \not\in FV(Q)}
+      {\{x , y \} \cap FV(Q) = \emptyset}
       {\new{x}{y} (\comp{P}{Q}) \equiv \comp{\new{x}{y} P}{Q}}
       {\rulename{ScopeExt}}
 
@@ -215,135 +248,15 @@
     \sitem Commutativity of scopes
   }
 
-  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Example}}
-    \vspace{-1em}
-    \begin{alignat*}{2}
-      & \new{x}{y} && \comp{Srv \, x}{Cln \, y \, 0} \\
-      & && \Downarrow \\
-      & \new{x}{y} && \comp{\recv{x}{n} \mathtt{if} \; n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \; \mathtt{then} \; \select{x}{\mathtt{win}} \PO \; \mathtt{else} \; \select{x}{\mathtt{miss}} Srv \, x}{\\
-      & && \send{y}{0} \branch{y}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, y \, 1}{}} \\
-      & && \Downarrow \\
-      & \new{x}{y} && \comp{\mathtt{if} \; 0 \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \; \mathtt{then} \; \select{x}{\mathtt{win}} \PO \; \mathtt{else} \; \select{x}{\mathtt{miss}} Srv \, x}{\\
-      & && \branch{y}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, y \, 1}{}} \\
-      & && \Downarrow \\
-      & \new{x}{y} && \comp{\select{x}{\mathtt{miss}} Srv \, x}{\branch{x}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, x \, 1}{}} \\
-      & && \Downarrow \\
-      & \new{x}{y} && \comp{Srv \, x}{Cln \, y \, 1} \\
-    \end{alignat*}{2}
-  \end{frame}
-
-  \begin{frame}{\slidetitle{Untyped \Picalc{}}{Example}}
-    \vspace{-1em}
-    \begin{alignat*}{2}
-      & \new{x}{y} && \comp{Srv \, x}{Cln \, y \, 13} \\
-      & && \Downarrow \\
-      & \new{x}{y} && \comp{\recv{x}{n} \mathtt{if} \; n \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \; \mathtt{then} \; \select{x}{\mathtt{win}} \PO \; \mathtt{else} \; \select{x}{\mathtt{miss}} Srv \, x}{\\
-      & && \send{y}{13} \branch{y}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, y \, 14}{}} \\
-      & && \Downarrow \\
-      & \new{x}{y} && \comp{\mathtt{if} \; 13 \, \mathtt{\stackrel{?}{=}} \, \mathtt{13} \; \mathtt{then} \; \select{x}{\mathtt{win}} \PO \; \mathtt{else} \; \select{x}{\mathtt{miss}} Srv \, x}{\\
-      & && \branch{y}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, y \, 14}{}} \\
-      & && \Downarrow \\
-      & \new{x}{y} && \comp{\select{x}{\mathtt{win}} \PO}{\branch{y}{ \mathtt{win} : \PO; \mathtt{miss} : Cln \, y \, 14}{}} \\
-      & && \Downarrow \\
-      & \new{x}{y} && \comp{\PO}{\PO} \\
-    \end{alignat*}
-  \end{frame}
-  
-
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Overview}}
-    \begin{center}
-      data types to structure data;\\
-      session types to structure communication
-    \end{center}
-
-    \begin{block}{communication safety}
-      the exchanged data is of the expected type
-    \end{block}
-    \begin{block}{session fidelity}
-      communication is structured as per the session type
-    \end{block}
-    \begin{block}{privacy}
-      only the two communicating parties can listen on a channel
-    \end{block}
-    \begin{block}{no race conditions}
-      no two processes race to obtain the same resource
-    \end{block}
-  \end{frame}
-
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Characteristics}}
-    \begin{description}
-      \setlength\itemsep{1em}
-      \item[endpoints] each channel has two endpoints
-      \item[linearity] channel endpoints are uniquely owned
-      \item[duality] relation between types of opposite endpoints
-      \item[structure] session types follow the structure of communication
-      \item[change] session types evolve as communication occurs
-    \end{description}
-  \end{frame}
-
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Types}}
-    \setlength{\abovedisplayskip}{0pt}
-    \setlength{\belowdisplayskip}{0pt}
-    \setlength{\abovedisplayshortskip}{0pt}
-    \setlength{\belowdisplayshortskip}{0pt}
-    \begin{align*}
-      Srv \is \trecv{\mathtt{Int}} \tselect{\mathtt{win} : \tend ; \; \mathtt{miss} : S}{} \\
-      Cln \is \tsend{\mathtt{Int}} \tbranch{\mathtt{win} : \tend ; \; \mathtt{miss} : C}{} \\
-    \end{align*}
-    \begin{align*}
-      S ::=& \; \tend      &&\text{(termination)}    \\ 
-      |& \; \trecv{T}S     &&\text{(input)}       \\ 
-      |& \; \tsend{T}S     &&\text{(output)}       \\           
-      |& \; \tbranch{l_i : S_i}{i \in I} &&\text{(branch)}       \\ 
-      |& \; \tselect{l_i : S_i}{i \in I} &&\text{(select)}       \\           
-      \\
-      T ::=& \; S      &&\text{(session type)} \\
-      | & \; \ldots      &&\text{(base data types)} \\
-    \end{align*}
-  \end{frame}
-
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Duality}}
-    \begin{equation*}
-      \begin{aligned}
-        &\dual{\tend}          &&\is \tend\\
-        &\dual{\trecv{T}S}     &&\is \tsend{T}\dual{S}\\
-        &\dual{\tsend{T}S}     &&\is \trecv{T}\dual{S}\\
-        &\dual{\tbranch{l_i : S_i}{i \in I}} &&\is \tselect{l_i : \dual{S_i}}{i \in I}\\
-        &\dual{\tselect{l_i : S_i}{i \in I}} &&\is \tbranch{l_i : \dual{S_i}}{i \in I}\\
-      \end{aligned}
-    \end{equation*}
-  \end{frame}
-
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Typing Judgments}}
+  \begin{frame}{typing rules}
     \begin{mathpar}
-      \datatype
-      { }
-      {\Gamma \ni e : S}
-      {\rulename{Contains}}
-
-      \datatype
-      { }
-      {\Gamma \types P}
-      {\rulename{Types}}
-    \end{mathpar}
-  \end{frame}
-
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Typing Rules}}
-    \begin{mathpar}
-      \small
-      
       \inferrule
       {un(\Gamma)}
-      {\Gamma , x : S \ni x : S}
-      {\rulename{Var}}
-
-      \inferrule
-      {\Gamma \ni x : \tend}
       {\Gamma \types \PO}
       {\rulename{End}}
 
       \inferrule
-      {\Gamma = \Gamma_P \csplit \Gamma_Q \\ \Gamma_P \types P \\ \Gamma_Q \types Q}
+      {\Gamma = \Gamma_P + \Gamma_Q \\ \Gamma_P \types P \\ \Gamma_Q \types Q}
       {\Gamma \types \comp{P}{Q}}
       {\rulename{Par}}
 
@@ -353,48 +266,65 @@
       {\rulename{Res}}
 
       \inferrule
-      {\Gamma = \Gamma_x \csplit \Gamma_P \\ \Gamma_x \ni x : \trecv{T}S \\ \Gamma_P , x : S , v : T \types P}
-      {\Gamma \types \recv{x}{v} P}
+      {\Gamma , x : S , v : T \types P}
+      {\Gamma , x : \trecv{T}{S} \types \recv{x}{v} P}
       {\rulename{In}}
 
       \inferrule
-      {\Gamma = \Gamma_x \csplit \Gamma_v \csplit \Gamma_P \\
-        \stacked{
-          \Gamma_x \ni x : \trecv{T}S \\\\
-          \Gamma_v \ni v : S} \\
-        \Gamma_P \types P}
-      {\Gamma \types \send{x}{v} P}
+      {\Gamma , x : S \types P}
+      {\Gamma , x : \tsend{T}S , v : T \types \send{x}{v} P}
       {\rulename{Out}}
     \end{mathpar}
   \end{frame}
 
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Encodings}}
-    correspondence with linear picalc
+  \begin{frame}{properties}
+    \begin{block}{\checkmark \; type preservation}\hfill{}\\
+    \end{block}
+
+    \begin{block}{\checkmark \; progress}
+      \colorbox{red}{TODO}
+    \end{block}
+
+    \begin{block}{\textcolor{red}{deadlock freedom}}\hfill{}\\
+      do not get stuck (on cyclic channel dependencies)
+      assign priorities to channel endpoints, enforce ordered sequence of actions
+    \end{block}
+
+    \begin{block}{\textcolor{red}{lock freedom}}\hfill\\
+      guaranteed communication
+    \end{block}
+
+    \begin{block}{\textcolor{red}{termination}}
+      guard recursion with input, weighted context, decrease on recursion
+    \end{block}
   \end{frame}
 
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Extensions}}
+  \begin{frame}{extensions}
+    \begin{block}{polymorphism}
+      $\forall T \Rightarrow \trecv{T} \tsend{T} \tend$
+    \end{block}
+    \begin{block}{subtyping}
+      $
+        \inferrule
+        {I \supseteq J \\ S_i <: S'_j}
+        {\tselect{l_i : S_i}{i \in I} <: \tselect{l_j : S'_j}{j \in J}}
+        {}
+      $
+    \end{block}
     \begin{block}{higher order}
+      \colorbox{red}{TODO}
       channels transmit processes
     \end{block}
-    \begin{block}{polymorphism}
-      abstractions in session types
-    \end{block}
-    \begin{block}{dependent channel types}
-      session types depend on received values
+    \begin{block}{dependent session types}
+      $\trecv{\mathbb{N}} \lambda n \rightarrow S$
+      \colorbox{red}{TODO} How does duality work?
     \end{block}
   \end{frame}
 
-  \begin{frame}{\slidetitle{Session Typed \Picalc{}}{Further Properties}}
-    \begin{block}{deadlock freedom}
+  \begin{frame}{encodings}
+    correspondence with linear picalc
 
-    \end{block}
-    \begin{block}{lock freedom}
-    \end{block}
-    \begin{block}{progress}
-    \end{block}
+    effects?
   \end{frame}
 
-  \begin{frame}{Acknowledgements}
-    Ornela Dardha
-  \end{frame}
 \end{document}
