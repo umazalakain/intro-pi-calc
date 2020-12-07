@@ -4,6 +4,7 @@
 \usepackage{url}
 \usepackage{amssymb}
 \usepackage{amsmath}
+\usepackage{nccmath}
 \usepackage{amsbsy}
 \usepackage{mathbbol}
 \usepackage{mathtools}
@@ -56,6 +57,7 @@
 \newcommand{\tsend}[1]{\type{!} #1 \type{.}}
 \newcommand{\tbranch}[2]{\type{\&} \{ #1 \}_{#2}}
 \newcommand{\tselect}[2]{\type{\oplus} \{ #1 \}_{#2}}
+\newcommand{\tchan}[1]{\type{C[} #1 \type{]}}
 \newcommand{\dual}[1]{\overline{#1}}
 \newcommand{\is}[0]{\triangleq}
 \newcommand{\types}[0]{\vdash}
@@ -105,9 +107,6 @@
     \begin{block}{no race conditions}
       no two processes race to obtain the same resource
     \end{block}
-    \begin{block}{\textcolor{red}{deadlocks!}}
-      \textcolor{red}{circular dependency between channels}
-    \end{block}
   \end{frame}
 
   \begin{frame}{types}
@@ -123,8 +122,8 @@
       |& \; \tbranch{l_i : S_i}{i \in I} &&\text{(branch)}       \\ 
       |& \; \tselect{l_i : S_i}{i \in I} &&\text{(select)}       \\           
       \\
-      T ::=& \; S      &&\text{(session type)} \\
-      | & \; \ldots      &&\text{(base data types)} \\
+      T ::=& \; \tchan{S} &&\text{(session type)} \\
+      | & \; \ldots       &&\text{(base data types)} \\
     \end{align*}
     \begin{align*}
       Srv \is \trecv{\mathtt{\mathbb{N}}} \tselect{\mathtt{win} : \tend ; \; \mathtt{miss} : Srv}{} \\
@@ -145,7 +144,14 @@
   \end{frame}
 
   \begin{frame}{languages for concurrent communication}
-    \colorbox{red}{TODO}
+    \begin{itemize}
+      \setlength\itemsep{1em}
+      \sitem \picalc{}
+      \sitem \textbf{G}ay \textbf{V}asconcelos
+      \sitem \textbf{C}alculus of \textbf{C}ommunicating \textbf{S}ystems (Milner)
+      \sitem \textbf{C}ommmunicating \textbf{S}equential \textbf{P}rocesses (Hoare)
+      \sitem Typestate
+    \end{itemize}
   \end{frame}
   
   \begin{frame}{example: the \picalc{}}
@@ -164,13 +170,13 @@
         P, Q ::=& \; \PO                     &&\text{(termination)}    \\
         |& \; \new{x}{y}P                    &&\text{(scope restriction)} \\
         |& \; \comp{P}{Q}                    &&\text{(parallel composition)} \\
-        |& \; \recv{x}{v}P                   &&\text{(input)}       \\
+        |& \; \recv{x}{y}P                   &&\text{(input)}       \\
         |& \; \send{x}{v}P                   &&\text{(output)}       \\
         |& \; \branch{x}{l_i : P_i}{i \in I} &&\text{(branch)}       \\
         |& \; \select{x}{l_j}P               &&\text{(select)}       \\
         |& \; \ldots                         &&\text{(base constructs)} \\
         \\
-        v ::=& \; x && \text{(channels)}\\
+        v ::=& \; x, y && \text{(channels)}\\
         | & \; \ldots && \text{(base values)}\\
     \end{align*}
   \end{frame}
@@ -277,33 +283,25 @@
     \end{mathpar}
   \end{frame}
 
-  \begin{frame}{properties}
-    \begin{block}{\checkmark \; type preservation}\hfill{}\\
+  \begin{frame}{notions of progress}
+    \begin{block}{\textcolor{red}{termination}}
+      every process reduces to $\PO$
     \end{block}
 
-    \begin{block}{\checkmark \; progress}
-      \colorbox{red}{TODO}
-    \end{block}
-
-    \begin{block}{\textcolor{red}{deadlock freedom}}\hfill{}\\
-      do not get stuck (on cyclic channel dependencies)
-      assign priorities to channel endpoints, enforce ordered sequence of actions
-    \end{block}
-
-    \begin{block}{\textcolor{red}{lock freedom}}\hfill\\
+    \begin{block}{\textcolor{red}{lock freedom}}
       guaranteed communication
     \end{block}
 
-    \begin{block}{\textcolor{red}{termination}}
-      guard recursion with input, weighted context, decrease on recursion
+    \begin{block}{\textcolor{red}{deadlock freedom}}
+      do not get stuck (on cyclic channel dependencies)
     \end{block}
   \end{frame}
 
   \begin{frame}{extensions}
-    \begin{block}{polymorphism}
+    \begin{block}{polymorphism}\hfill\\
       $\forall T \Rightarrow \trecv{T} \tsend{T} \tend$
     \end{block}
-    \begin{block}{subtyping}
+    \begin{block}{subtyping}\hfill\\
       $
         \inferrule
         {I \supseteq J \\ S_i <: S'_j}
@@ -311,20 +309,45 @@
         {}
       $
     \end{block}
+  \end{frame}
+
+  \begin{frame}{extensions}
     \begin{block}{higher order}
-      \colorbox{red}{TODO}
-      channels transmit processes
+      \begin{fleqn}[0pt]
+        \setlength{\abovedisplayskip}{0pt}
+        \setlength{\belowdisplayskip}{0pt}
+        \begin{alignat*}{3}
+          & && \new{x}{y} (\comp {\send{x}{ \mathtt{quote} \, \mathbf{P}} Q} {\recv{y}{\mathbf{P'}}{ \mathtt{unquote} \, \mathbf{P'}}}) & \\
+          & \reducesto && \new{x}{y} (\comp{Q}{\mathtt{unquote} \, \mathtt{quote} \, P}) & \\
+          & \reducesto && \new{x}{y} (\comp{Q}{P}) &
+        \end{alignat*}
+      \end{fleqn}
     \end{block}
-    \begin{block}{dependent session types}
-      $\trecv{\mathbb{N}} \lambda n \rightarrow S$
-      \colorbox{red}{TODO} How does duality work?
+    \begin{block}{dependent session types}\hfill\\
+      \begin{itemize}
+        \sitem $\trecv{\mathbb{N}} \lambda n \rightarrow S$
+        \sitem \framebox{$\trecv{\tchan{\mathbb{N}}} \lambda n \rightarrow S$}?
+      \end{itemize}
     \end{block}
   \end{frame}
 
-  \begin{frame}{encodings}
-    correspondence with linear picalc
+  \begin{frame}{embeddings and correspondences}
+    \begin{block}{to the linear \picalc{}}\hfill\\
+      $\Gamma \vdash \mathbf{P} \implies [\![ \Gamma ]\!] \vdash [\![ \mathbf{P} ]\!]$
+    \end{block}
 
-    effects?
+    \begin{block}{from effect systems}\hfill\\
+      $\Gamma \vdash e : T , F \implies [\![ \Gamma ]\!]; \, x : \tsend {[\![ T ]\!]} \tend , \, y : [\![ F ]\!] \vdash [\![ e ]\!]$
+    \end{block}
+
+    \begin{block}{correspondence with (classical) linear logic}
+    \end{block}
   \end{frame}
 
+  \begin{frame}
+    \centering
+    \Huge{thank you!}\\
+    \Huge{\textasciicircum{}\_\textasciicircum{}} \\
+    \Huge{questions?}\\
+  \end{frame}
 \end{document}
