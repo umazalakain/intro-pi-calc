@@ -126,19 +126,19 @@
       | & \; \ldots       &&\text{(base data types)} \\
     \end{align*}
     \begin{align*}
-      Srv \is \trecv{\mathtt{\mathbb{N}}} \tselect{\mathtt{win} : \tend ; \; \mathtt{miss} : Srv}{} \\
-      Cln \is \tsend{\mathtt{\mathbb{N}}} \tbranch{\mathtt{win} : \tend ; \; \mathtt{miss} : Cln}{} \\
+      Srv & \is \trecv{\mathtt{\mathbb{N}}} \tselect{\mathtt{win} : \tend ; \; \mathtt{miss} : Srv}{} \\
+      Cln & \is \tsend{\mathtt{\mathbb{N}}} \tbranch{\mathtt{win} : \tend ; \; \mathtt{miss} : Cln}{} \\
     \end{align*}
   \end{frame}
 
   \begin{frame}{duality}
     \begin{equation*}
       \begin{aligned}
-        &\dual{\tend}          &&\is \tend\\
-        &\dual{\trecv{T}S}     &&\is \tsend{T}\dual{S}\\
-        &\dual{\tsend{T}S}     &&\is \trecv{T}\dual{S}\\
-        &\dual{\tbranch{l_i : S_i}{i \in I}} &&\is \tselect{l_i : \dual{S_i}}{i \in I}\\
-        &\dual{\tselect{l_i : S_i}{i \in I}} &&\is \tbranch{l_i : \dual{S_i}}{i \in I}\\
+        \dual{\tend}          &\is \tend\\
+        \dual{\trecv{T}S}     &\is \tsend{T}\dual{S}\\
+        \dual{\tsend{T}S}     &\is \trecv{T}\dual{S}\\
+        \dual{\tbranch{l_i : S_i}{i \in I}} &\is \tselect{l_i : \dual{S_i}}{i \in I}\\
+        \dual{\tselect{l_i : S_i}{i \in I}} &\is \tbranch{l_i : \dual{S_i}}{i \in I}\\
       \end{aligned}
     \end{equation*}
   \end{frame}
@@ -148,9 +148,9 @@
       \setlength\itemsep{1em}
       \sitem \picalc{}
       \sitem \textbf{G}ay \textbf{V}asconcelos
+      \sitem Typestate
       \sitem \textbf{C}alculus of \textbf{C}ommunicating \textbf{S}ystems (Milner)
       \sitem \textbf{C}ommmunicating \textbf{S}equential \textbf{P}rocesses (Hoare)
-      \sitem Typestate
     \end{itemize}
   \end{frame}
   
@@ -326,7 +326,7 @@
     \begin{block}{dependent session types}\hfill\\
       \begin{itemize}
         \sitem $\trecv{\mathbb{N}} \lambda n \rightarrow S$
-        \sitem \framebox{$\trecv{\tchan{\mathbb{N}}} \lambda n \rightarrow S$}?
+        \sitem \framebox{$\trecv{\tchan{\trecv{\mathbb{N}} \tsend{\mathbb{N}} \tend}} \lambda c \rightarrow S$}?
       \end{itemize}
     \end{block}
   \end{frame}
@@ -340,14 +340,13 @@
       $\Gamma \vdash e : T , F \implies [\![ \Gamma ]\!]; \, x : \tsend {[\![ T ]\!]} \tend , \, y : [\![ F ]\!] \vdash [\![ e ]\!]$
     \end{block}
 
-    \begin{block}{correspondence with (classical) linear logic}
+    \begin{block}{correspondence with linear logic}
     \end{block}
   \end{frame}
 
   \begin{frame}
     \centering
     \Huge{thank you!}\\
-    \Huge{\textasciicircum{}\_\textasciicircum{}} \\
     \Huge{questions?}\\
   \end{frame}
 \end{document}
